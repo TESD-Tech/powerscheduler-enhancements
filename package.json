@@ -1,0 +1,22 @@
+{
+  "name": "powerscheduler-enhancements",
+  "version": "24.3.0",
+  "description": "A PowerSchool SIS plugin to the existing PowerScheduler Course List report and make it editable.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TESD-Tech/powerscheduler-enhancements.git"
+  },
+  "author": "Benjamin Kemp",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/TESD-Tech/powerscheduler-enhancements/issues"
+  },
+  "homepage": "https://github.com/TESD-Tech/powerscheduler-enhancements#readme",
+  "devDependencies": {
+    "@tesd-tech/ps-package": "^24.1.1"
+  }
+}
