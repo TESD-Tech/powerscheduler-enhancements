@@ -1,1 +1,74 @@
-<h2>T/E Tech</h2>
+<!-- START courselist.te-tech.content.footer.txt -->
+<script>
+  let courses = []
+  
+  function observeCourseListUpdates(targetSelector, updateFunction) {
+    const target = document.querySelector(targetSelector)
+
+    if (!target) {
+      console.error(`No element found with selector: ${targetSelector}`)
+      return
+    }
+
+    const callback = (mutationsList, observer) => {
+      for (let mutation of mutationsList) {
+        if (mutation.type === 'childList') {
+          for (let node of mutation.addedNodes) {
+            if (node instanceof HTMLElement && node.matches('table.grid.ng-scope')) {
+              try {
+                updateFunction()
+              } catch (error) {
+                console.error('Failed to update course list:', error)
+              }
+              observer.disconnect()
+              break
+            }
+          }
+        }
+      }
+    }
+
+    const observer = new MutationObserver(callback)
+    observer.observe(target, { childList: true, subtree: true })
+  }
+
+  observeCourseListUpdates('div.box-round', updateCourseList)
+
+  function updateCourseTable(courses) {
+    const table = document.querySelector('table.grid.ng-scope')
+    if (!table) {
+      console.error('No course table found')
+      return
+    }
+
+    const tbody = table.querySelector('tbody')
+    if (!tbody) {
+      console.error('No course table body found')
+      return
+    }
+
+    // Iterate each table row and update the course name to be a link
+    for (let row of tbody.rows) {
+      const course_number = row.cells[0].textContent
+      const course_name = row.cells[1].textContent
+      const course = courses.find(course => course.COURSE_NUMBER === course_number)
+      if (course) {
+        row.cells[0].innerHTML = `<a href="/admin/powerschedule/coursecatalog/courseedit.html?frn=107${course.DCID}" target="_blank">${course_number}</a>`
+        row.cells[1].innerHTML = `<a href="/admin/powerschedule/coursecatalog/courseedit.html?frn=107${course.DCID}" target="_blank">${course_name}</a>`
+      }
+    }
+  }
+
+  async function updateCourseList() {
+    await fetch('/admin/powerschedule/te-tech/courses.json')
+      .then(response => response.json())
+      .then(data => {
+        courses = data
+        updateCourseTable(courses)
+      })
+      .catch(error => console.error(error))
+
+    return
+  }
+</script>
+<!-- END courselist.te-tech.content.footer.txt -->
