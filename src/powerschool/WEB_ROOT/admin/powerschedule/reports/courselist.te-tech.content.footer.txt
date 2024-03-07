@@ -1,6 +1,44 @@
 <!-- START courselist.te-tech.content.footer.txt -->
+<style>
+  .cell-editing {
+    background-color: lightyellow !important;
+  }
+
+  .cell-error {
+    background-color: #ffcccc !important;
+  }
+
+  .cell-success {
+    background-color: #ccffcc !important;
+  }
+
+  @keyframes pulse {
+    0% {
+      background-color: lightblue;
+    }
+    50% {
+      background-color: rgba(19, 237, 66, 0.855);
+    }
+    100% {
+      background-color: lightblue;
+    }
+  }
+
+  .cell-saving {
+    animation: pulse 0.5s infinite;
+  }
+</style>
+
+<div id="enhanced_course_list_instructions" class="">
+  <h3>Enhanced Course List</h3>
+  <p>Click on a cell to edit the value. Press Enter to save the value and move to the next cell.</p>
+  <p>Boolean columns accept 'Y' or 'N' as values. If the value is not 'Y' or 'N', the cell will turn red and the value will not be saved.</p>
+</div>
+
 <script>
   let courses = []
+  let header = []
+  const boolean_columns = ['Scheduled', 'Team', 'Section Type']
   
   function observeCourseListUpdates(targetSelector, updateFunction) {
     const target = document.querySelector(targetSelector)
@@ -55,11 +93,201 @@
       if (course) {
         row.cells[0].innerHTML = `<a href="/admin/powerschedule/coursecatalog/courseedit.html?frn=107${course.DCID}" target="_blank">${course_number}</a>`
         row.cells[1].innerHTML = `<a href="/admin/powerschedule/coursecatalog/courseedit.html?frn=107${course.DCID}" target="_blank">${course_name}</a>`
+
+        // Make other cells editable and add an input event listener
+        for (let i = 2; i < row.cells.length; i++) {
+          const cell = row.cells[i]
+
+          // Add dcid attribute to cell
+          cell.setAttribute('dcid', course.DCID)
+
+          // Add original value to cell as data attribute
+          cell.setAttribute('data-original-value', cell.textContent)
+
+          cell.contentEditable = 'true'
+          cell.addEventListener('input', () => {
+            handleCellChange(cell)
+          })
+
+          // Add keydown event listener to save cell on Enter key press
+          cell.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault() // Prevent adding a newline character
+              saveCell(cell)
+            }
+            if (event.key === 'Tab') {
+              event.preventDefault() // Prevent default tab action
+              saveCell(cell)
+              const nextCell = event.shiftKey ? cell.previousElementSibling : cell.nextElementSibling
+              if (nextCell) {
+                nextCell.focus()
+                placeCaretAtEnd(nextCell)
+              }
+            }
+          })
+        }
+      }
+    }
+  }
+
+  function handleCellChange(cell) {
+    // Add cell-editing class to cell
+    cell.classList.add('cell-editing')
+
+    // Remove cell-error and cell-success classes from cell
+    cell.classList.remove('cell-error')
+    cell.classList.remove('cell-success')
+
+    const dcid = cell.getAttribute('dcid')
+    const originalValue = cell.getAttribute('data-original-value')
+    const newValue = cell.textContent
+    const this_header = header[cell.cellIndex]
+
+    // If original value is different from new value, set the changed attribute to true
+    if (originalValue !== newValue) {
+      cell.setAttribute('changed', 'true')
+    } else {
+      cell.removeAttribute('changed')
+    }
+
+    // If the cell is a boolean and the value is not 'Y', 'N' or '', set the cell to an error state
+    if (this_header.type === 'boolean' && !['Y', 'N', ''].includes(newValue)) {
+      cell.classList.remove('cell-editing')
+      cell.classList.add('cell-error')
+      return
+    }
+
+    console.log(`DCID: ${dcid}, Cell changed: ${newValue}`)
+  }
+
+  function saveCell(cell) {
+    if (cell.classList.contains('cell-error')) {
+      return
+    }
+
+    // Remove cell-editing class from cell
+    cell.classList.remove('cell-editing')
+
+    // If cell has changed attribute, save the cell
+    if (cell.getAttribute('changed') === 'true') {
+      const dcid = cell.getAttribute('dcid')
+      const column = header[cell.cellIndex].column
+      const columnType = header[cell.cellIndex].type
+      let newValue = cell.textContent.trim()
+
+      if (columnType === 'boolean') {
+        if (['','N'].includes(newValue)) {
+          if (newValue === '') {
+            cell.textContent = 'N'
+          }
+          newValue = 0
+        } else {
+          newValue = 1
+        }
+      } else if (columnType === 'number') {
+        if (newValue === '') {
+          newValue = 0
+          cell.textContent = '0'
+        }
+      }
+
+      // Add cell-saving class to cell
+      cell.classList.add('cell-saving')
+
+      console.log(`Saving DCID: ${dcid}, Column: ${column}, New Value: ${newValue}`)
+
+      // Simulate a successful save
+      simulateSave(cell)
+    }
+
+    // Move focus to the next cell down
+    const currentRow = cell.parentNode
+    const nextRow = currentRow.nextElementSibling
+    if (nextRow) {
+      const cellIndex = Array.from(currentRow.children).indexOf(cell)
+      const nextCell = nextRow.children[cellIndex]
+      if (nextCell) {
+        nextCell.focus()
+        placeCaretAtEnd(nextCell)
+      }
+    }
+  }
+
+  function simulateSave(cell) {
+    // Set cell's original value to the new value
+    cell.setAttribute('data-original-value', cell.textContent)
+
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        // Remove cell-saving class from cell
+        cell.classList.remove('cell-saving')
+        // Add cell-success class to cell
+        cell.classList.add('cell-success')
+
+        setTimeout(() => {
+          // Remove cell-success class from cell
+          cell.classList.remove('cell-success')
+        }, 3000)
+        resolve()
+      }, 1000)
+    })
+  }
+
+  function placeCaretAtEnd(el) {
+      el.focus()
+      if (typeof window.getSelection != "undefined"
+        && typeof document.createRange != "undefined") {
+        var range = document.createRange()
+        range.selectNodeContents(el)
+        range.collapse(false)
+        var sel = window.getSelection()
+        sel.removeAllRanges()
+        sel.addRange(range)
+      } else if (typeof document.body.createTextRange != "undefined") {
+        var textRange = document.body.createTextRange()
+        textRange.moveToElementText(el)
+        textRange.collapse(false)
+        textRange.select()
+      }
+    }
+
+  function updateHeader() {
+    const table = document.querySelector('table.grid.ng-scope')
+    if (!table) {
+      console.error('No course table found')
+      return
+    }
+
+    const thead = table.querySelector('thead')
+    if (!thead) {
+      console.error('No course table header found')
+      return
+    }
+
+    // Clear header
+    header = []
+    // Populate header using thead
+    // Each th contains the database column name in the data-pss-sort-fields attribute
+    for (let th of thead.querySelectorAll('th')) {
+      const column_name = th.innerText
+      const raw_header = th.getAttribute('data-pss-sort-fields')
+      const header_parts = raw_header.split(',')
+      const this_header = {}
+      
+      if (header_parts[0]) {
+        [this_header.column, this_header.type] = header_parts[0].split('|')
+
+        if (boolean_columns.includes(column_name)) {
+          this_header.type = 'boolean'
+        }
+        header.push(this_header)
       }
     }
   }
 
   async function updateCourseList() {
+    updateHeader()
+
     await fetch('/admin/powerschedule/te-tech/courses.json')
       .then(response => response.json())
       .then(data => {
