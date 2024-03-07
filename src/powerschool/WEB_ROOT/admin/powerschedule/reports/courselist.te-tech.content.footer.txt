@@ -27,6 +27,22 @@
   .cell-saving {
     animation: pulse 0.5s infinite;
   }
+
+  .cell {
+    position: relative;
+  }
+
+  .cell-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    cursor: pointer;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-top: 10px solid lime;
+    transform: rotate(90deg);
+  }
 </style>
 
 <div id="enhanced_course_list_instructions" class="">
@@ -36,9 +52,11 @@
 </div>
 
 <script>
+  const boolean_columns = ['Scheduled', 'Team', 'Section Type']
   let courses = []
   let header = []
-  const boolean_columns = ['Scheduled', 'Team', 'Section Type']
+  let isCopying = false
+  let copiedValue = null
   
   function observeCourseListUpdates(targetSelector, updateFunction) {
     const target = document.querySelector(targetSelector)
@@ -97,6 +115,7 @@
         // Make other cells editable and add an input event listener
         for (let i = 2; i < row.cells.length; i++) {
           const cell = row.cells[i]
+          cell.classList.add('cell')
 
           // Add dcid attribute to cell
           cell.setAttribute('dcid', course.DCID)
@@ -108,6 +127,9 @@
           cell.addEventListener('input', () => {
             handleCellChange(cell)
           })
+
+          // Add drag handle to cell
+          addDragHandle(cell)
 
           // Add keydown event listener to save cell on Enter key press
           cell.addEventListener('keydown', (event) => {
@@ -125,9 +147,63 @@
               }
             }
           })
+
+          // Save the cell if it loses focus
+          cell.addEventListener('blur', () => {
+            saveCell(cell)
+          })
         }
       }
     }
+  }
+
+  function addDragHandle(cell) {
+    const handle = document.createElement('div')
+    handle.classList.add('cell-handle')
+    handle.contentEditable = 'false'
+    handle.style.display = 'none'
+    cell.appendChild(handle)
+
+    let dragStarted = false
+    let draggedValue = null
+
+    // When the cell is focused, show the handle
+    cell.addEventListener('focus', () => {
+      handle.style.display = 'block'
+    })
+
+    // When the cell is unfocused, hide the handle
+    cell.addEventListener('blur', () => {
+      handle.style.display = 'none'
+    })
+
+    // When the handle is pressed, start the drag operation
+    handle.addEventListener('mousedown', (event) => {
+      event.preventDefault()
+      dragStarted = true
+      draggedValue = cell.textContent
+    })
+
+    // When the mouse is moved, if a drag operation has started, copy the value to the cell under the cursor
+    document.addEventListener('mousemove', (event) => {
+      if (dragStarted) {
+        const targetCell = document.elementFromPoint(event.clientX, event.clientY)
+        if (targetCell && targetCell.classList.contains('cell')) {
+          targetCell.textContent = draggedValue
+          handleCellChange(targetCell) // Call the function to handle cell changes
+          // Then save the cell
+          saveCell(targetCell)
+        }
+      }
+    })
+
+    // When the mouse is released, end the drag operation
+    document.addEventListener('mouseup', () => {
+      if (dragStarted) {
+        dragStarted = false
+        draggedValue = null
+      }
+    })
   }
 
   function handleCellChange(cell) {
@@ -168,6 +244,11 @@
     // Remove cell-editing class from cell
     cell.classList.remove('cell-editing')
 
+    // Re-add drag handle to cell if it was removed
+    if (!cell.querySelector('.cell-handle')) {
+      addDragHandle(cell)
+    }
+
     // If cell has changed attribute, save the cell
     if (cell.getAttribute('changed') === 'true') {
       const dcid = cell.getAttribute('dcid')
@@ -198,19 +279,20 @@
 
       // Simulate a successful save
       simulateSave(cell)
-    }
-
-    // Move focus to the next cell down
-    const currentRow = cell.parentNode
-    const nextRow = currentRow.nextElementSibling
-    if (nextRow) {
-      const cellIndex = Array.from(currentRow.children).indexOf(cell)
-      const nextCell = nextRow.children[cellIndex]
-      if (nextCell) {
-        nextCell.focus()
-        placeCaretAtEnd(nextCell)
+      
+      // Move focus to the next cell down
+      const currentRow = cell.parentNode
+      const nextRow = currentRow.nextElementSibling
+      if (nextRow) {
+        const cellIndex = Array.from(currentRow.children).indexOf(cell)
+        const nextCell = nextRow.children[cellIndex]
+        if (nextCell) {
+          nextCell.focus()
+          placeCaretAtEnd(nextCell)
+        }
       }
     }
+
   }
 
   function simulateSave(cell) {
