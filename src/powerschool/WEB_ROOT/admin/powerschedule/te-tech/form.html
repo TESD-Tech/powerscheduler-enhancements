@@ -1,5 +1,6 @@
 <form action="">
-  <input type="text" name="[~(gpv.table)]~(gpv.column)" id="~(gpv.column)">
-  <input name="ac" type="hidden" value="prim" />
+  <input type="hidden" name="[~(gpv.table)]~(gpv.column)" id="~(gpv.column)" value="~(gpv.value)">
+  <!-- Adding this x code enables saving to SCHED_VALIDSTARTPERIODS -->
+  ~[x:schedulevalidperiods]
   ~[submitbutton]
 </form>

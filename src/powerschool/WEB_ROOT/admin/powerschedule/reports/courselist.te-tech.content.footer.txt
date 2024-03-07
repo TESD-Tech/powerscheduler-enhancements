@@ -1,5 +1,16 @@
 <!-- START courselist.te-tech.content.footer.txt -->
 <style>
+  form.grid.ng-scope thead {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background-color: white;
+  }
+
+  tr:hover {
+    background-color: lightyellow !important;
+  }
+
   .cell-editing {
     background-color: lightyellow !important;
   }
@@ -59,10 +70,10 @@
   const boolean_columns = ['Scheduled', 'Team', 'Section Type']
   let courses = []
   let header = []
-  let isCopying = false
-  let copiedValue = null
+  let isCopying = false // Flag to indicate if a cell is being copied
+  let copiedValue = null // Value to be copied to other cells when dragging handle
 
-  const changeStack = []
+  const changeStack = [] // Array to hold changes for undo functionality
   
   // Add event listener to document for keydown events
   document.addEventListener('keydown', (event) => {
@@ -88,6 +99,13 @@
                   // When #advanced-report-grid-widgetRefreshButton is clicked, update the course list
                 document.getElementById('advanced-report-grid-widgetRefreshButton').addEventListener('click', updateCourseList)
                 document.getElementById('advanced-report-grid-widgetClearButton').addEventListener('click', updateCourseList)
+
+                // When the user presses "Enter" or "Return" when in the input #simple-search-report-grid-widget, update the course list
+                document.getElementById('simple-search-report-grid-widget').addEventListener('keydown', (event) => {
+                  if (event.key === 'Enter' || event.key === 'Return') {
+                    updateCourseList()
+                  }
+                })
 
                 updateFunction()
               } catch (error) {
@@ -287,9 +305,9 @@
           if (newValue === '') {
             cell.textContent = 'N'
           }
-          newValue = 0
+          newValue = 'False'
         } else {
-          newValue = 1
+          newValue = 'True'
         }
       } else if (columnType === 'number') {
         if (newValue === '') {
@@ -301,10 +319,7 @@
       // Add cell-saving class to cell
       cell.classList.add('cell-saving')
 
-      console.log(`Saving DCID: ${dcid}, Column: ${column}, New Value: ${newValue}`)
-
-      // Simulate a successful save
-      simulateSave(cell, isUndo)
+      save(cell, newValue, isUndo)
 
       // Move focus to the next cell down
       const currentRow = cell.parentNode
@@ -334,11 +349,13 @@
     }
   }
 
-  function simulateSave(cell, isUndo = false) {
-    // Get cell ID, value, and original value
+  function save(cell, value, isUndo = false) {
     const id = cell.getAttribute('id')
+    const dcid = cell.getAttribute('dcid')
+    const url = `/admin/powerschedule/te-tech/form.html?frn=107${dcid}`
     const column = header[cell.cellIndex].column
-    const newValue = cell.textContent
+    const table = 'SCHEDULECOURSECATALOGS'
+    const newValue = value
     const originalValue = cell.getAttribute('data-original-value')
 
     // Push cell to change stack if it's not an undo operation
@@ -353,22 +370,74 @@
     // Set cell's original value to the new value
     cell.setAttribute('data-original-value', cell.textContent)
 
+    // Prefetch the form to get input name
+    return fetch(`${url}&table=${table}&column=${column}`, {
+      credentials: 'include',
+      method: 'GET'
 
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Remove cell-saving class from cell
+    })
+    .then(response => response.text())
+    .then(text => {
+      const parser = new DOMParser()
+      const htmlDocument = parser.parseFromString(text, 'text/html')
+      const form = htmlDocument.querySelector('form')
+      const input = form.querySelector('input[type="hidden"]')
+      const inputName = input.getAttribute('name')
+
+      return inputName
+    })
+    .then(inputName => {
+      const saveParams = new URLSearchParams()
+      saveParams.append('frn', `107${dcid}`)
+      saveParams.append('btnSubmit', '')
+      saveParams.append('ac', 'prim')
+      saveParams.append('ac', 'schedulefunctions;getcatalogid')
+      saveParams.append('ac', 'suv;lastcoursecatalogpage=/admin/PowerSchedule/ScheduleCourseEdit.html')
+      saveParams.append(inputName, value)
+
+      // If this is the period array, add vsp per period
+      if (column.toUpperCase() === 'Sched_validStartPeriods'.toUpperCase()) {
+        const periods = value.split(',')
+        for (let i = 0; i < periods.length; i++) {
+          saveParams.append(`vsp`, periods[i])
+        }
+      }
+
+      return fetch(url, {
+        method: 'POST',
+        credentials: 'include',
+        body: saveParams.toString(),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      })
+    .then(response => {
+      if (!response.ok) {
         cell.classList.remove('cell-saving')
-        // Add cell-success class to cell
+        cell.classList.add('cell-error')
+        throw new Error('Network response was not ok')
+      }
+      else {
+        cell.classList.remove('cell-saving')
         cell.classList.add('cell-success')
 
         setTimeout(() => {
           // Remove cell-success class from cell
           cell.classList.remove('cell-success')
         }, 3000)
-        resolve()
-      }, 1000)
+
+        return response.text()
+      }
     })
+    .catch(error => {
+      console.error('Error:', error)
+    })
+  })
+  .catch(error => {
+    console.error('Error:', error)
+  })
   }
+
 
   function placeCaretAtEnd(el) {
       el.focus()
