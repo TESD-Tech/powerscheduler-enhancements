@@ -45,7 +45,7 @@
   }
 </style>
 
-<div id="enhanced_course_list_instructions" class="">
+<div id="enhanced_course_list_instructions" class="hidden">
   <h3 class="toggle collapsed">Enhanced Course List Guide</h3>
   <div>
     <p>Click on a cell to edit the value. Pressing Enter, Return, Tab, or moving out of the cell saves the value.</p>
@@ -85,6 +85,10 @@
           for (let node of mutation.addedNodes) {
             if (node instanceof HTMLElement && node.matches('table.grid.ng-scope')) {
               try {
+                  // When #advanced-report-grid-widgetRefreshButton is clicked, update the course list
+                document.getElementById('advanced-report-grid-widgetRefreshButton').addEventListener('click', updateCourseList)
+                document.getElementById('advanced-report-grid-widgetClearButton').addEventListener('click', updateCourseList)
+
                 updateFunction()
               } catch (error) {
                 console.error('Failed to update course list:', error)
@@ -439,6 +443,7 @@
       const instructions = document.getElementById('enhanced_course_list_instructions')
       if (instructions) {
         boxRound.prepend(instructions)
+        instructions.classList.remove('hidden')
       }
     }
   })
