@@ -57,6 +57,15 @@
   let header = []
   let isCopying = false
   let copiedValue = null
+
+  const changeStack = []
+  
+  // Add event listener to document for keydown events
+  document.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+      undo()
+    }
+  })
   
   function observeCourseListUpdates(targetSelector, updateFunction) {
     const target = document.querySelector(targetSelector)
@@ -116,6 +125,9 @@
         for (let i = 2; i < row.cells.length; i++) {
           const cell = row.cells[i]
           cell.classList.add('cell')
+
+          // Add unique id to cell
+          cell.setAttribute('id', `${course.DCID}_${i}`)
 
           // Add dcid attribute to cell
           cell.setAttribute('dcid', course.DCID)
@@ -236,7 +248,7 @@
     console.log(`DCID: ${dcid}, Cell changed: ${newValue}`)
   }
 
-  function saveCell(cell) {
+  function saveCell(cell, isUndo = false) {
     if (cell.classList.contains('cell-error')) {
       return
     }
@@ -250,11 +262,16 @@
     }
 
     // If cell has changed attribute, save the cell
-    if (cell.getAttribute('changed') === 'true') {
+    if (cell.getAttribute('changed') === 'true' || isUndo) {
       const dcid = cell.getAttribute('dcid')
       const column = header[cell.cellIndex].column
       const columnType = header[cell.cellIndex].type
+      const originalValue = cell.getAttribute('data-original-value')
       let newValue = cell.textContent.trim()
+
+      if (newValue === originalValue) {
+        return
+      }
 
       if (columnType === 'boolean') {
         if (['','N'].includes(newValue)) {
@@ -278,8 +295,8 @@
       console.log(`Saving DCID: ${dcid}, Column: ${column}, New Value: ${newValue}`)
 
       // Simulate a successful save
-      simulateSave(cell)
-      
+      simulateSave(cell, isUndo)
+
       // Move focus to the next cell down
       const currentRow = cell.parentNode
       const nextRow = currentRow.nextElementSibling
@@ -295,9 +312,38 @@
 
   }
 
-  function simulateSave(cell) {
+  function undo() {
+    const change = changeStack.pop()
+    if (!change) {
+      return
+    }
+    const cell = document.getElementById(`${change.id}`)
+    if (cell) {
+      cell.textContent = change.originalValue
+      cell.removeAttribute('changed')
+      saveCell(cell, true)
+    }
+  }
+
+  function simulateSave(cell, isUndo = false) {
+    // Get cell ID, value, and original value
+    const id = cell.getAttribute('id')
+    const column = header[cell.cellIndex].column
+    const newValue = cell.textContent
+    const originalValue = cell.getAttribute('data-original-value')
+
+    // Push cell to change stack if it's not an undo operation
+    if (!isUndo) {
+      changeStack.push({
+        id: id,
+        originalValue: originalValue,
+        newValue: newValue
+      })
+    }
+
     // Set cell's original value to the new value
     cell.setAttribute('data-original-value', cell.textContent)
+
 
     return new Promise((resolve, reject) => {
       setTimeout(() => {
