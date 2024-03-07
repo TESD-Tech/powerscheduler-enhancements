@@ -46,7 +46,7 @@
 </style>
 
 <div id="enhanced_course_list_instructions" class="">
-  <h3 class="toggle collapsed">Enhanced Course List</h3>
+  <h3 class="toggle collapsed">Enhanced Course List Guide</h3>
   <div>
     <p>Click on a cell to edit the value. Pressing Enter, Return, Tab, or moving out of the cell saves the value.</p>
     <p>Click and drag the green handle in the bottom right corner of a cell to copy the value to other cells.</p>
@@ -243,7 +243,7 @@
     }
 
     // If the cell is a boolean and the value is not 'Y', 'N' or '', set the cell to an error state
-    if (this_header.type === 'boolean' && !['Y', 'N', ''].includes(newValue)) {
+    if (this_header.type === 'boolean' && !['Y', 'N', ''].includes(newValue.toUpperCase() )) {
       cell.classList.remove('cell-editing')
       cell.classList.add('cell-error')
       return
@@ -278,6 +278,7 @@
       }
 
       if (columnType === 'boolean') {
+        newValue = newValue.toUpperCase()
         if (['','N'].includes(newValue)) {
           if (newValue === '') {
             cell.textContent = 'N'
