@@ -46,9 +46,13 @@
 </style>
 
 <div id="enhanced_course_list_instructions" class="">
-  <h3>Enhanced Course List</h3>
-  <p>Click on a cell to edit the value. Press Enter to save the value and move to the next cell.</p>
-  <p>Boolean columns accept 'Y' or 'N' as values. If the value is not 'Y' or 'N', the cell will turn red and the value will not be saved.</p>
+  <h3 class="toggle collapsed">Enhanced Course List</h3>
+  <div>
+    <p>Click on a cell to edit the value. Pressing Enter, Return, Tab, or moving out of the cell saves the value.</p>
+    <p>Click and drag the green handle in the bottom right corner of a cell to copy the value to other cells.</p>
+    <p>Press Ctrl+Z or Command+Z to undo the last change.</p>
+    <p>Y/N columns only accept 'Y' or 'N' as values. If the value is not 'Y' or 'N', the cell will turn red and the value will not be saved.</p>
+  </div>
 </div>
 
 <script>
@@ -426,5 +430,16 @@
 
     return
   }
+
+  // On page load, prepend the instructions to div.box-round
+  document.addEventListener('DOMContentLoaded', () => {
+    const boxRound = document.querySelector('div.box-round')
+    if (boxRound) {
+      const instructions = document.getElementById('enhanced_course_list_instructions')
+      if (instructions) {
+        boxRound.prepend(instructions)
+      }
+    }
+  })
 </script>
 <!-- END courselist.te-tech.content.footer.txt -->
