@@ -76,6 +76,7 @@
     max-width: 800px; /* Limit the maximum width */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
     animation: slide-up 0.3s ease-in-out; /* Slide up animation */
+    border-radius: 6px;
   }
 
   .modal-header {
@@ -115,7 +116,7 @@
     </div>
     <div class="modal-body">
       <p id="errorMessage"></p>
-      <pre id="options" class="report-options"></pre>
+      <pre id="options" class="report-options hidden"></pre>
     </div>
     <div class="modal-footer">
       ~[if#te.~(districtnumber)=124157802]
@@ -453,10 +454,14 @@
     const id = cell.getAttribute('id')
     const dcid = cell.getAttribute('dcid')
     const url = `/admin/powerschedule/te-tech/form.html?frn=107${dcid}`
-    const column = header[cell.cellIndex].column
+    const column = header[cell.cellIndex].column.toUpperCase()
     const table = 'SCHEDULECOURSECATALOGS'
     const newValue = value
     const originalValue = cell.getAttribute('data-original-value')
+
+    // Valid Start Periods are getting blanked out when saving, so we need to always send them
+    const validStartPeriods_index = header.findIndex(header => header.column.toLowerCase() === 'sched_validstartperiods')
+    const validStartPeriods = validStartPeriods_index > -1 ? cell.parentNode.cells[validStartPeriods_index].textContent : ''
 
     // Push cell to change stack if it's not an undo operation
     if (!isUndo) {
@@ -507,15 +512,15 @@
       saveParams.append('ac', 'suv;lastcoursecatalogpage=/admin/PowerSchedule/ScheduleCourseEdit.html')
       saveParams.append(inputName, value)
 
-      // If this is the period array, add vsp per period
-      if (column.toLowerCase() === 'Sched_validStartPeriods'.toLowerCase()) {
-        const periods = value.split(',')
+      // Always send periods
+      if (validStartPeriods) {
+        const periods = validStartPeriods.split(',')
         for (let i = 0; i < periods.length; i++) {
           saveParams.append(`vsp`, periods[i])
         }
       }
 
-      return fetch(url, {
+      return fetch(`${url}&column=${column}`, {
         method: 'POST',
         credentials: 'include',
         body: saveParams.toString(),
@@ -529,17 +534,32 @@
         cell.classList.add('cell-error')
         throw new Error('Network response was not ok')
       }
-      else {
-        cell.classList.remove('cell-saving')
-        cell.classList.add('cell-success')
-
-        setTimeout(() => {
-          // Remove cell-success class from cell
-          cell.classList.remove('cell-success')
-        }, 3000)
-
         return response.text()
+    })
+    .then(response => {
+      cell.classList.remove('cell-saving')
+      cell.classList.add('cell-success')
+
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(response, 'text/html')
+      const boxRound = doc.querySelector('.box-round')
+      let text = boxRound ? boxRound.textContent.trim() : '';
+      error = text.replace(/Alert:/g, '').replace(/Back/g, '').trim()
+
+      if (error) {
+        cell.classList.remove('cell-success')
+        cell.classList.add('cell-error')
+        handleError(error)
+        return
       }
+
+      setTimeout(() => {
+        // Remove cell-success class from cell
+        cell.classList.remove('cell-success')
+      }, 3000)
+
+      return response
+      
     })
     .catch(error => {
       handleError(error)
@@ -645,12 +665,31 @@
     // Show the error message in the modal
     errorMessage.innerHTML = `Oops! ${error}. Please try again.`;
     modal.style.display = 'block';
-    if (options)
+    if (options && options != {})
       errorOptions.textContent = JSON.stringify(options, null, 2);
   }
 
   // On page load, prepend the instructions to div.box-round
   document.addEventListener('DOMContentLoaded', () => {
+    // Prime PowerSchool and pre-fetch the courseedit form
+    // This prevents Alert: Security Violation Logged errors
+
+    const prime = fetch('/admin/powerschedule/coursecatalog/courseedit.html', {
+      credentials: 'include',
+      method: 'GET'
+    })
+    .then(response => {
+      if (response.redirected) {
+        handleError('Session expired. Please refresh the page and try again.')
+        console.error('Session expired. Please refresh the page and try again.')
+        return
+      } else if (!response.ok) {
+        handleError('Network response was not ok')
+        throw new Error('Network response was not ok')
+      }
+      return response.text()
+    })
+
     const boxRound = document.querySelector('div.box-round')
     if (boxRound) {
       const instructions = document.getElementById('enhanced_course_list_instructions')
