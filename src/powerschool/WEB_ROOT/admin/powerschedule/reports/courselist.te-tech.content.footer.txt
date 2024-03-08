@@ -46,7 +46,7 @@
 </style>
 
 <div id="enhanced_course_list_instructions" class="hidden">
-  <h3 class="toggle collapsed">T/E Tech - Enhanced Course List Guide</h3>
+  <h3 class="toggle collapsed">T/E Tech - Enhanced Course List Guide~[if.isschedulebuild][else]<span style="font-size: smaller; font-style: italic;">(Note: The active scenario is set to "Load Only". Editing has not been enabled for certain fields.)[/if]</span></h3>
   <div>
     <p>Click on a cell to edit the value. Pressing Enter, Return, Tab, or moving out of the cell saves the value.</p>
     <p>Click and drag the green handle in the bottom right corner of a cell to copy the value to other cells.</p>
@@ -56,13 +56,27 @@
 </div>
 
 <script>
+  const changeStack = [] // Array to hold changes for undo functionality
   const boolean_columns = ['Scheduled', 'Team', 'Section Type']
+  const isScheduleBuild = ('true' === '~[if.isschedulebuild]true[else]false[/if]')
+  let disabled_columns = []
+
+  if (!isScheduleBuild) {
+    disabled_columns = [
+      'sched_scheduletypecode',
+      'sched_balanceterms',
+      'sched_validdaycombinations',
+      'sched_validextradaycombinations',
+      'sched_validstartperiods',
+      'sched_facilities',
+
+    ]
+  }
+
   let courses = []
   let header = []
   let isCopying = false // Flag to indicate if a cell is being copied
   let copiedValue = null // Value to be copied to other cells when dragging handle
-
-  const changeStack = [] // Array to hold changes for undo functionality
   
   // Add event listener to document for keydown events
   document.addEventListener('keydown', (event) => {
@@ -138,6 +152,13 @@
 
         // Make other cells editable and add an input event listener
         for (let i = 2; i < row.cells.length; i++) {
+          const this_header = header[i]
+
+          // If the column is disabled, skip it
+          if (disabled_columns.includes(this_header.column.toLowerCase() )) {
+            continue
+          }
+
           const cell = row.cells[i]
           cell.classList.add('cell')
 
