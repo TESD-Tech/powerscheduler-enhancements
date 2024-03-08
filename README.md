@@ -14,6 +14,7 @@ The plugin is enabled for the following reports:
 1. **Undo Functionality**: Made a mistake? No worries! Just press `Ctrl+Z` or `Command+Z` to undo the last change. 🔄
 2. **Validation**: The Y/N columns only accept 'Y' or 'N' as values. If the value is not 'Y' or 'N', the cell will turn red and the value will not be saved. This ensures your data is always accurate. ✔️
 3. **Error Handling**: If there's an error, a modal will pop up with the error message and options. If the problem persists, you can enter an Issue on our Github repo. 🆘
+4. **Build and Load / Load Only Aware**: Some fields should not be edited if the report is in "Load Only" mode. The plugin is aware of this and will disable the fields accordingly. 🚫
 
 ## How to Use 📖
 
