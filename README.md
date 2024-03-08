@@ -1,6 +1,6 @@
 # PowerScheduler Enhancements Plugin 🚀
 
-Hello there! 👋 Welcome to the PowerScheduler Enhancements Plugin. This plugin is designed to supercharge your PowerScheduler reports by enabling Excel-style editing right within the report. No more navigating to other pages to correct or change the data displayed on the report. Everything you need is right here! 🎉
+Hello there! 👋 Welcome to the PowerScheduler Enhancements Plugin. This plugin is designed to supercharge your PowerScheduler reports by enabling Excel-style editing right within the report. No more navigating to other pages to correct or change the data displayed on the report. 🎉
 
 ## Enabled Reports 📊
 
