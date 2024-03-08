@@ -43,6 +43,58 @@
     border-top: 10px solid lime;
     transform: rotate(90deg);
   }
+
+  /* Error message styling */
+  .error-message {
+    color: red;
+    font-weight: bold;
+    display: none; /* Hide the element by default */
+  }
+
+  /* The Modal (background) */
+  .modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    padding-top: 20px;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4); /* Black with opacity */
+    backdrop-filter: blur(4px); /* Add a blur effect to the background */
+    animation: fade-in 0.3s ease-in-out; /* Fade in animation */
+  }
+
+  /* Modal Content */
+  .modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 800px; /* Limit the maximum width */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    animation: slide-up 0.3s ease-in-out; /* Slide up animation */
+  }
+
+  .modal-header {
+    padding: 10px 16px;
+    background-color: #dc3545; /* Red color */
+    color: white;
+    border-radius: 6px;
+  }
+
+  .modal-body {
+    padding: 10px 16px; 
+  }
+
+  .modal-footer {
+    padding: 10px 16px;
+    background-color: #dc3545; /* Red color */
+    color: white;
+    border-radius: 6px;
+  }
 </style>
 
 <div id="enhanced_course_list_instructions" class="hidden">
@@ -55,10 +107,31 @@
   </div>
 </div>
 
+<div id="errorModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span class="close">&times;</span>
+      <h2>Error</h2>
+    </div>
+    <div class="modal-body">
+      <p id="errorMessage"></p>
+      <pre id="options" class="report-options"></pre>
+    </div>
+    <div class="modal-footer">
+      ~[if#te.~(districtnumber)=124157802]
+      <h3>Please enter a <a href="https://helpdesk.tesd.net/" target="_blank">HelpDesk Ticket</a> if the problem persists.</h3>
+      [else#te]
+      <h3>Please enter an <a href="https://github.com/TESD-Tech/powerscheduler-enhancements/issues" target="_blank">Issue</a> on our Github repo if the problem persists.</h3>
+      [/if#te]
+    </div>
+  </div>
+</div>
+
 <script>
   const changeStack = [] // Array to hold changes for undo functionality
   const boolean_columns = ['Scheduled', 'Team', 'Section Type']
   const isScheduleBuild = ('true' === '~[if.isschedulebuild]true[else]false[/if]')
+  const curSchoolID = '~(curschoolid)'
   let disabled_columns = []
 
   if (!isScheduleBuild) {
@@ -72,6 +145,9 @@
 
     ]
   }
+
+  if (curSchoolID === '0')
+    handleError('Please select a school to view the course list.')
 
   let courses = []
   let header = []
@@ -89,6 +165,7 @@
     const target = document.querySelector(targetSelector)
 
     if (!target) {
+      handleError(`No element found with selector: ${targetSelector}`)
       console.error(`No element found with selector: ${targetSelector}`)
       return
     }
@@ -112,6 +189,7 @@
 
                 updateFunction()
               } catch (error) {
+                handleError(`Failed to update course list: ${error}`)
                 console.error('Failed to update course list:', error)
               }
               observer.disconnect()
@@ -131,12 +209,14 @@
   function updateCourseTable(courses) {
     const table = document.querySelector('table.grid.ng-scope')
     if (!table) {
+      handleError('No course table found')
       console.error('No course table found')
       return
     }
 
     const tbody = table.querySelector('tbody')
     if (!tbody) {
+      handleError('No course table body found')
       console.error('No course table body found')
       return
     }
@@ -396,7 +476,19 @@
       method: 'GET'
 
     })
-    .then(response => response.text())
+    .then(response => {
+      if (response.redirected) {
+        handleError('Session expired. Please refresh the page and try again.')
+        console.error('Session expired. Please refresh the page and try again.')
+        return
+      } else if (!response.ok) {
+        cell.classList.remove('cell-saving')
+        cell.classList.add('cell-error')
+        handleError('Network response was not ok')
+        throw new Error('Network response was not ok')
+      }
+      return response.text()
+    })
     .then(text => {
       const parser = new DOMParser()
       const htmlDocument = parser.parseFromString(text, 'text/html')
@@ -416,7 +508,7 @@
       saveParams.append(inputName, value)
 
       // If this is the period array, add vsp per period
-      if (column.toUpperCase() === 'Sched_validStartPeriods'.toUpperCase()) {
+      if (column.toLowerCase() === 'Sched_validStartPeriods'.toLowerCase()) {
         const periods = value.split(',')
         for (let i = 0; i < periods.length; i++) {
           saveParams.append(`vsp`, periods[i])
@@ -450,10 +542,12 @@
       }
     })
     .catch(error => {
+      handleError(error)
       console.error('Error:', error)
     })
   })
   .catch(error => {
+    handleError(error)
     console.error('Error:', error)
   })
   }
@@ -480,12 +574,14 @@
   function updateHeader() {
     const table = document.querySelector('table.grid.ng-scope')
     if (!table) {
+      handleError('No course table found')
       console.error('No course table found')
       return
     }
 
     const thead = table.querySelector('thead')
     if (!thead) {
+      handleError('No course table header found')
       console.error('No course table header found')
       return
     }
@@ -520,9 +616,37 @@
         courses = data
         updateCourseTable(courses)
       })
-      .catch(error => console.error(error))
+      .catch(error => {
+        console.error(error)
+        handleError(`Failed to fetch course list: ${error}. Do you have an active <a href="/admin/powerschedule/home.html" target="_blank">Scenario</a> selected?`)
+      })
 
     return
+  }
+
+  function handleError(error) {
+    const modal = document.getElementById('errorModal');
+    const span = document.getElementsByClassName('close')[0];
+    const errorMessage = document.getElementById('errorMessage');
+    const errorOptions = document.getElementById('options');
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function () {
+      modal.style.display = 'none';
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function (event) {
+      if (event.target == modal) {
+        modal.style.display = 'none';
+      }
+    }
+
+    // Show the error message in the modal
+    errorMessage.innerHTML = `Oops! ${error}. Please try again.`;
+    modal.style.display = 'block';
+    if (options)
+      errorOptions.textContent = JSON.stringify(options, null, 2);
   }
 
   // On page load, prepend the instructions to div.box-round
