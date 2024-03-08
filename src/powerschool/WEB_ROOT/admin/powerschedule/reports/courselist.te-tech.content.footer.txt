@@ -223,14 +223,26 @@
     })
 
     // When the mouse is moved, if a drag operation has started, copy the value to the cell under the cursor
+    // Only if the cell is in the same column
     document.addEventListener('mousemove', (event) => {
       if (dragStarted) {
         const targetCell = document.elementFromPoint(event.clientX, event.clientY)
         if (targetCell && targetCell.classList.contains('cell')) {
-          targetCell.textContent = draggedValue
-          handleCellChange(targetCell) // Call the function to handle cell changes
-          // Then save the cell
-          saveCell(targetCell)
+          // Get the parent row of the target cell and the dragged cell
+          const targetRow = targetCell.parentNode;
+          const draggedRow = cell.parentNode;
+
+          // Get the index of the target cell and the dragged cell in their respective rows
+          const targetIndex = Array.from(targetRow.children).indexOf(targetCell);
+          const draggedIndex = Array.from(draggedRow.children).indexOf(cell);
+
+          // Only copy the value if the cells are in the same column
+          if (targetIndex === draggedIndex) {
+            targetCell.textContent = draggedValue
+            handleCellChange(targetCell) // Call the function to handle cell changes
+            // Then save the cell
+            saveCell(targetCell)
+          }
         }
       }
     })
@@ -270,8 +282,6 @@
       cell.classList.add('cell-error')
       return
     }
-
-    console.log(`DCID: ${dcid}, Cell changed: ${newValue}`)
   }
 
   function saveCell(cell, isUndo = false) {
