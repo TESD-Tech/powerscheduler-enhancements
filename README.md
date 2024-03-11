@@ -20,6 +20,8 @@ The plugin is enabled for the following reports:
 
 The plugin is embedded in the footer of the PowerScheduler report. First, install and enable the plugin. Then, all you need to do is navigate to the report and start editing. ✨
 
+![Editing Animation](https://github.com/TESD-Tech/powerscheduler-enhancements/blob/main/assets/editing_animation.gif)
+
 ## Feedback 📬
 
 We love hearing from you! If you have any issues or suggestions, please don't hesitate to open an issue here in our [Github repo](https://github.com/TESD-Tech/powerscheduler-enhancements/issues).
