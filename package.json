@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/TESD-Tech/powerscheduler-enhancements#readme",
   "devDependencies": {
-    "@tesd-tech/ps-package": "^24.1.1"
+    "@tesd-tech/ps-package": "^24.3.0"
   }
 }
