@@ -143,8 +143,11 @@
       'sched_validextradaycombinations',
       'sched_validstartperiods',
       'sched_facilities',
-
     ]
+  }
+
+  const columnTranslations = {
+    'SCHED_SECTIONSOFFERED': 'SECTIONSTOOFFER',
   }
 
   if (curSchoolID === '0')
@@ -454,10 +457,15 @@
     const id = cell.getAttribute('id')
     const dcid = cell.getAttribute('dcid')
     const url = `/admin/powerschedule/te-tech/form.html?frn=107${dcid}`
-    const column = header[cell.cellIndex].column.toUpperCase()
+    let column = header[cell.cellIndex].column.toUpperCase()
     const table = 'SCHEDULECOURSECATALOGS'
     const newValue = value
     const originalValue = cell.getAttribute('data-original-value')
+
+    // Translate column name if necessary
+    if (columnTranslations[column]) {
+      column = columnTranslations[column]
+    }
 
     // Valid Start Periods are getting blanked out when saving, so we need to always send them
     const validStartPeriods_index = header.findIndex(header => header.column.toLowerCase() === 'sched_validstartperiods')
