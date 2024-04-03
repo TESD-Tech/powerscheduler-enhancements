@@ -143,6 +143,7 @@
       'sched_validextradaycombinations',
       'sched_validstartperiods',
       'sched_facilities',
+      'requests'
     ]
   }
 
@@ -225,11 +226,34 @@
       return
     }
 
+    // Add a "Requests" column to the header
+    const requestsHeader = document.createElement('th');
+    requestsHeader.textContent = 'Requests';
+
+    // Find the index of the th with text "Max"
+    const headerRow = table.querySelector('thead tr');
+    let maxIndex = 1;
+
+    // Add Requests header to the header array in the same position as the "Max" header
+    header.splice(maxIndex + 1, 0, { column: 'requests', type: 'number' })
+
+    // Insert the new th after the "Max" th
+    headerRow.insertBefore(requestsHeader, headerRow.cells[maxIndex + 1]);
+
     // Iterate each table row and update the course name to be a link
     for (let row of tbody.rows) {
       const course_number = row.cells[0].textContent
       const course_name = row.cells[1].textContent
       const course = courses.find(course => course.COURSE_NUMBER === course_number)
+
+      // Add a "Requests" cell to each row in the tbody
+      const cell = document.createElement('td');
+      cell.classList.add('center')
+      cell.textContent = course.REQUESTS || 0;
+
+      // Insert the new td after the "Max" td
+      row.insertBefore(cell, row.cells[maxIndex + 1]);
+
       if (course) {
         row.cells[0].innerHTML = `<a href="/admin/powerschedule/coursecatalog/courseedit.html?frn=107${course.DCID}" target="_blank">${course_number}</a>`
         row.cells[1].innerHTML = `<a href="/admin/powerschedule/coursecatalog/courseedit.html?frn=107${course.DCID}" target="_blank">${course_name}</a>`
@@ -239,7 +263,7 @@
           const this_header = header[i]
 
           // If the column is disabled, skip it
-          if (disabled_columns.includes(this_header.column.toLowerCase() )) {
+          if (disabled_columns.includes(this_header.column.toLowerCase() ) || this_header.column === 'requests') {
             continue
           }
 
