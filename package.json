@@ -1,6 +1,6 @@
 {
   "name": "powerscheduler-enhancements",
-  "version": "24.4.2",
+  "version": "24.4.3",
   "description": "A PowerSchool SIS plugin to the existing PowerScheduler Course List report and make it editable.",
   "main": "index.js",
   "scripts": {
