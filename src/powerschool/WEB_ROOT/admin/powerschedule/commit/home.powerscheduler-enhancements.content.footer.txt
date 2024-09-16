@@ -1,0 +1,14 @@
+<!-- START home.powerscheduler-enhancements.content.footer.txt -->
+ <div id="teacher-warning-container">
+  <div id="teacher-warning" class="feedback-error">WARNING! The Teacher Portal can only be turned on/off on a district level. All schools must be in agreement before the Teacher Portal is re-enabled.</div>
+</div>
+
+<script>
+  $j(function () {
+    var html = $j('#teacher-warning-container').html();
+    $j('#content-main').find('.box-round').eq(0).append(html);
+    $j('#teacher-warning-container').addClass('hidden');
+  });
+
+</script>
+<!-- END home.powerscheduler-enhancements.content.footer.txt -->
