@@ -548,7 +548,7 @@
       if (validStartPeriods) {
         const periods = validStartPeriods.split(',')
         for (let i = 0; i < periods.length; i++) {
-          saveParams.append(`vsp`, periods[i])
+          saveParams.append(`vsp`, periods[i].trim())
         }
       }
 
